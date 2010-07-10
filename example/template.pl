@@ -14,7 +14,10 @@ my $tmpl = 'include'; # 'include' or 'list'
 use Config; printf "Perl/%vd %s\n", $^V, $Config{archname};
 
 foreach my $mod(qw(
-    Text::Xslate Text::MicroTemplate Template
+    Text::Xslate
+    Text::MicroTemplate
+    Text::MicroTemplate::Extended
+    Template
 )){
     print $mod, '/', $mod->VERSION, "\n";
 }
