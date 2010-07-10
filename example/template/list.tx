@@ -1,0 +1,18 @@
+List:
+: for $data ->($item) {
+    * <:= $item.title :>
+    * <:= $item.title :>
+    * <:= $item.title :>
+: }
+List:
+: for $data ->($item) {
+    * <:= $item.title :>
+    * <:= $item.title :>
+    * <:= $item.title :>
+: }
+List:
+: for $data ->($item) {
+    * <:= $item.title :>
+    * <:= $item.title :>
+    * <:= $item.title :>
+: }
