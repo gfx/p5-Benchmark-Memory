@@ -25,7 +25,7 @@ foreach my $mod(qw(
 my $path = "$Bin/template";
 
 system $^X, "$Bin/mk_template.pl"
-    if not -e "$path/template/large.tx";
+    if not -e "$path/large.tx";
 
 find sub {
     unlink $_ if /\.txc$/ or /\.out/;
