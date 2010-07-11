@@ -4,6 +4,8 @@ use inc::Module::Install;
 
 all_from 'lib/Benchmark/Memory.pm';
 
+requires 'JSON';
+
 test_requires 'Test::More' => 0.88; # done_testing()
 
 tests_recursive;
