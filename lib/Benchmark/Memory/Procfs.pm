@@ -1,5 +1,5 @@
 package Benchmark::Memory::Procfs;
-use strict;
+BEGIN{ $^H |= 0x0602; } # use strict
 
 sub new {
     my($class) = @_;
