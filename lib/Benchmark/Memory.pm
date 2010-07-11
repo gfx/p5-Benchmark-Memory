@@ -2,37 +2,36 @@ package Benchmark::Memory;
 
 use 5.008_001;
 use strict;
+use warnings;
 
 our $VERSION = '0.01';
+
+use parent qw(Exporter);
+our @EXPORT = qw(cmpthese d);
+
+use Carp       qw(croak);
+use IPC::Open3 qw(open3);
+use JSON         ();
 
 our $GUTS = __PACKAGE__;
 
 my $trace = $ENV{BM_TRACE} || 0;
 
-sub import {
-    no strict 'refs';
-    *{ caller() . '::cmpthese' } = \&cmpthese;
-}
-
-sub croak {
-    require Carp;
-    goto &Carp::croak;
+sub d {
+    require Data::Dumper;
+    my $dd = Data::Dumper->new([\@_], ['*args']);
+    $dd->Indent(0);
+    $dd->Purity(1);
+    return sprintf 'do{ my %s; @args }', $dd->Dump();
 }
 
 sub new {
     my($class) = @_;
 
-    # TODO:
-    # ::GTop?
-    # ::Win32?
-    require Benchmark::Memory::Procfs;
-
     return bless {
-        mstat => Benchmark::Memory::Procfs->new(),
+        mstat_class => 'Benchmark::Memory::Procfs',
     }, $class;
 }
-
-sub memory_usage { $_[0]->{mstat}->memory_usage }
 
 sub cmpthese {
     my $bm = $GUTS->new();
@@ -40,9 +39,6 @@ sub cmpthese {
     print $bm->report($result);
     return;
 }
-
-my $ns_tmpl = __PACKAGE__ . '::_tmp%d';
-my $id      = 0;
 
 sub execute {
     my $self  = shift;
@@ -78,63 +74,85 @@ sub execute {
             $filter->();
             $code = $_;
         }
+        elsif(ref $code) {
+            croak("Code for '$name' must be a source code");
+        }
 
-        my $s;
-        if(not ref $code) {
-            $s = '';
-            for my $c(1 .. $count) {
-                my $ns = sprintf $ns_tmpl, ++$id;
-                $s .= sprintf <<'T', $name, $c, $ns, $code;
+        $result{$name} = $self->_eval($count, $name, $code);
+    }
+    return \%result;
+}
+
+my $ns_tmpl = __PACKAGE__ . '::_tmp%d';
+my $ns_id   = 0;
+
+sub _eval {
+    my($self, $count, $name, $code) = @_;
+
+    local(*CIN, *COUT, *CERR);
+
+    my $pid = open3(\*CIN, \*COUT, \*CERR, $^X);
+
+    printf CIN <<'CODE', $self->{mstat_class}, join(", ", map { "q{$_}" } @INC), strict::bits(qw(vars refs subs));
+my($mstat, $m0, $pu0, $ps0, $cu0, $cs0);
+BEGIN{
+    @INC = (%2$s);
+    require %1$s;
+    $mstat                   = %1$s->new();
+    $m0                      = $mstat->memory_usage();
+    ($pu0, $ps0, $cu0, $cs0) = times();
+
+    $^H                     |= %3$d; # use strict
+}
+CODE
+
+    foreach my $c(1 .. $count) {
+            my $ns = sprintf $ns_tmpl, ++$ns_id;
+            printf CIN <<'CODE', $name, $c, $ns, $code;
 # %s (%d)
 package %s;
 {
 %s
 }
-T
-            }
-        }
+CODE
 
-        print STDERR $s if $trace and defined $s;
-
-        my $m0 = $self->memory_usage;
-
-        my($pu0, $ps0, $cu0, $cs0) = times();
-        if(defined $s) {
-            $self->_eval($s, $name, $code);
-        }
-        else {
-            for (1 .. $count) {
-                $code->();
-            }
-        }
-        my($pu1, $ps1, $cu1, $cs1) = times();
-
-        my $m1 = $self->memory_usage;
-
-        $result{$name} = {
-            name   => $name,
-            code   => $code,
-            memory => $m1 - $m0,
-            pu     => $pu1 - $pu0,
-            ps     => $ps1 - $ps0,
-            cu     => $cu1 - $cu0,
-            cs     => $cs1 - $cs0,
-        };
     }
-    return \%result;
-}
 
-sub _eval {
-    eval $_[1];
+    print CIN <<'CODE';
+my($pu1, $ps1, $cu1, $cs1) = times();
+my $m1                     = $mstat->memory_usage();
+my %result = (
+    memory => $m1  - $m0,
+    pu     => $pu1 - $pu0,
+    ps     => $ps1 - $ps0,
+    cu     => $cu1 - $cu0,
+    cs     => $cs1 - $cs0,
+);
+require 'JSON.pm';
+print JSON->new()->encode(\%result);
+CODE
+    close CIN;
 
-    if($@) {
-        my($self, undef, $name, $code) = @_;
+    my($cout, $cerr);
+    {
+        local $/;
+        $cout = <COUT>;
+        close COUT;
+        $cerr = <CERR>;
+        close CERR;
+    }
+
+    if($cerr) {
         croak("Failed to eval for '$name':\n"
             . "Source:\n"
             . $code
             . "Error:\n"
-            . $@);
+            . $cerr);
     }
+
+    my $json = JSON->new()->decode($cout);
+    # valide it here?
+    return $json;
 }
 
 my $B   = 2 **   1;

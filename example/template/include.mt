@@ -1,11 +1,2 @@
 Include:
-?= include "list", @_
-?= include "list", @_
-?= include "list", @_
-?= include "list", @_
-?= include "list", @_
-?= include "list", @_
-?= include "list", @_
-?= include "list", @_
-?= include "list", @_
-?= include "list", @_
+?= include "tiny", @_

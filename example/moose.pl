@@ -5,9 +5,6 @@ use Benchmark::Memory;
 
 my $count = shift(@ARGV) || 1;
 
-require Moose;
-require Mouse;
-
 print "Memory usage (x $count):\n";
 cmpthese $count => {
     Moose => q{

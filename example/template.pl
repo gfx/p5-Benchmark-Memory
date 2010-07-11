@@ -7,9 +7,9 @@ use Text::Xslate;
 use Text::MicroTemplate::Extended;
 use Template;
 
+use File::Find qw(find);
 use FindBin qw($Bin);
-
-my $tmpl = 'include'; # 'include' or 'list'
+use Fatal qw(open close);
 
 use Config; printf "Perl/%vd %s\n", $^V, $Config{archname};
 
@@ -23,6 +23,13 @@ foreach my $mod(qw(
 }
 
 my $path = "$Bin/template";
+
+system $^X, "$Bin/mk_template.pl"
+    if not -e "$path/template/large.tx";
+
+find sub {
+    unlink $_ if /\.txc$/ or /\.out/;
+}, $path;
 
 my @tx_args = (
     path       => [$path],
@@ -46,21 +53,27 @@ my $vars = {
    ],
 };
 
-cmpthese 1 => {
-    Xslate => sub {
-        my $tx = Text::Xslate->new(@tx_args);
-        my $body = $tx->render("$tmpl.tx", $vars);
-        return;
-    },
-    MTEx => sub {
-        my $mt = Text::MicroTemplate::Extended->new(@mt_args);
-        my $body = $mt->render_file($tmpl, $vars);
-        return;
-    },
-    TT => sub {
-        my $tt = Template->new(@tt_args);
-        my $body;
-        $tt->process("$tmpl.tt", $vars, \$body) or die $tt->error;
-        return;
-    },
-};
+for my $tmpl qw(tiny large) {
+    for my $count(1, 2) {
+        print "Memory Usage for '$tmpl' ($count):\n";
+        cmpthese 1 => {
+            Xslate => sprintf(q{
+                use Text::Xslate;
+                my $tx = Text::Xslate->new(%s);
+                my $body = $tx->render(%s, %s);
+            }, d(@tx_args), d("$tmpl.tx"), d($vars)),
+
+            MTEx => sprintf(q{
+                use Text::MicroTemplate::Extended;
+                my $mt = Text::MicroTemplate::Extended->new(%s);
+                my $body = $mt->render_file(%s, %s);
+            }, d(@mt_args), d($tmpl), d($vars)),
+            TT => sprintf( q{
+                use Template;
+                my $tt = Template->new(%s);
+                my $body;
+                $tt->process(%s, %s, \$body) or die $tt->error;
+            }, d(@tt_args), d("$tmpl.tt"), d($vars)),
+        };
+    }
+}

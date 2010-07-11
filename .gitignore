@@ -22,3 +22,5 @@ cover_db*
 *.gcov
 *.stackdump
 *.*c
+example/template/tiny*.*
+example/template/large.*

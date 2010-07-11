@@ -1,11 +1,2 @@
 Include:
-[% INCLUDE "list.tt" -%]
-[% INCLUDE "list.tt" -%]
-[% INCLUDE "list.tt" -%]
-[% INCLUDE "list.tt" -%]
-[% INCLUDE "list.tt" -%]
-[% INCLUDE "list.tt" -%]
-[% INCLUDE "list.tt" -%]
-[% INCLUDE "list.tt" -%]
-[% INCLUDE "list.tt" -%]
-[% INCLUDE "list.tt" -%]
+[% INCLUDE "tiny.tt" -%]
