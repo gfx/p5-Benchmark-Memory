@@ -71,6 +71,10 @@ sub execute {
             local $_ = $map{$proto}
                 or croak("'$proto' does not exist");
 
+            if(ref $_) {
+                croak("Cannot apply a filter to another filter");
+            }
+
             $filter->();
             $code = $_;
         }
@@ -180,11 +184,11 @@ sub report {
 
     my $scale_tag;
     my $scale;
-    if($max_memory >= ($MiB/2)) {
+    if($max_memory >= $MiB) {
         $scale_tag = 'MiB';
         $scale     = $MiB;
     }
-    elsif($max_memory >= ($KiB/2)) {
+    elsif($max_memory >= $KiB) {
         $scale_tag = 'KiB';
         $scale     = $KiB;
     }
@@ -193,8 +197,7 @@ sub report {
         $scale     = $B;
     };
 
-    foreach my $name( sort { $result->{$b}{memory} <=> $result->{$a}{memory} }
-            keys %{$result} ) {
+    foreach my $name( sort keys %{$result} ) {
         my $r = $result->{$name};
         $s .= sprintf "%-${name_len}s: %8.03f $scale_tag (times: user=%.03f, sys=%.03f)\n",
             $name, $r->{memory} / $scale, $r->{pu}, $r->{ps};

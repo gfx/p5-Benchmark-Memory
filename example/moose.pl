@@ -14,19 +14,19 @@ for my $count(1, 100) {
                 is  => 'rw',
                 isa => 'Str',
             );
+            no Moose;
         },
 
-        Mouse => [ Moose => sub { s/\b Moose \b/Mouse/xmsg } ],
+        Mouse => [ 'Moose'
+            => sub { s/\b Moose \b/Mouse/xmsg } ],
 
-        'Moose/im' => q{
-            use Moose;
-            has [qw(foo bar baz)] => (
-                is  => 'rw',
-                isa => 'Str',
-            );
-            __PACKAGE__->meta->make_immutable();
-        },
+        'Moose/im' => [ 'Moose'
+            => sub{ $_ .= '__PACKAGE__->meta->make_immutable();' } ],
 
-        'Mouse/im' => [ 'Moose/im' => sub { s/\b Moose \b/Mouse/xmsg } ],
+        'Mouse/im' => [ 'Moose'
+            => sub {
+                 s/\b Moose \b/Mouse/xmsg;
+                 $_ .= '__PACKAGE__->meta->make_immutable();';
+           } ],
     };
 }
