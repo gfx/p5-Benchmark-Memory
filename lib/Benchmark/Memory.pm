@@ -211,7 +211,7 @@ __END__
 
 =head1 NAME
 
-Benchmark::Memory - Measures memory usage of Perl code
+Benchmark::Memory - Measures memory usage of Perl code snippets
 
 =head1 VERSION
 
