@@ -7,7 +7,6 @@ use Text::Xslate;
 use Text::MicroTemplate::Extended;
 use Template;
 
-use File::Find qw(find);
 use FindBin qw($Bin);
 use Fatal qw(open close);
 
@@ -24,12 +23,9 @@ foreach my $mod(qw(
 
 my $path = "$Bin/template";
 
-system $^X, "$Bin/mk_template.pl"
-    if not -e "$path/large.tx";
-
-find sub {
-    unlink $_ if /\.txc$/ or /\.out/;
-}, $path;
+my @tmpfiles = make_templates($path);
+push @tmpfiles, "$path/tiny.txc", "$path/tiny.tt.out";
+END{ unlink @tmpfiles }
 
 my @tx_args = (
     path       => [$path],
@@ -76,4 +72,45 @@ for my $tmpl qw(tiny large) {
             }, d(@tt_args), d("$tmpl.tt"), d($vars)),
         };
     }
+}
+
+sub slurp {
+    my($file) = @_;
+    open my $in, '<', $file;
+    local $/;
+    <$in>;
+}
+
+sub make_templates {
+    my($path) = @_;
+
+    my @tmpfiles;
+    for my $suffix(qw(tt mt tx)) {
+        my $tiny_content    = slurp("$path/tiny.$suffix");
+        my $include_content = slurp("$path/include.$suffix");
+
+        my $file = "$path/large.$suffix";
+        push @tmpfiles, $file;
+        push @tmpfiles, $file . 'c'    if $suffix eq 'tx';
+        push @tmpfiles, $file . '.out' if $suffix eq 'tt';
+
+        open my $large, '>', $file;
+        for my $i(1 .. 128) {
+            $file = "$path/tiny$i.$suffix";
+
+            push @tmpfiles, $file;
+            push @tmpfiles, $file . 'c'    if $suffix eq 'tx';
+            push @tmpfiles, $file . '.out' if $suffix eq 'tt';
+
+            open my $tiny, '>', $file;
+            print $tiny $tiny_content;
+            close $tiny;
+
+            my $s = $include_content;
+            $s =~ s/tiny\./tiny$i\./;
+            print $large $s;
+        }
+        close $large;
+    }
+    return @tmpfiles;
 }
