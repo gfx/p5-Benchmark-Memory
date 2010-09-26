@@ -23,4 +23,5 @@ cover_db*
 *.stackdump
 *.*c
 example/template/tiny*.*
+!example/template/tiny.*
 example/template/large.*

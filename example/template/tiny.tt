@@ -1,0 +1,6 @@
+List:
+[% FOREACH item IN data -%]
+    * [% item.title %]
+    * [% item.author %]
+    * [% item.abstract %]
+[% END -%]
