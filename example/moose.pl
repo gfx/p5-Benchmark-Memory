@@ -1,8 +1,6 @@
 #!perl -w
-
 use strict;
 use Benchmark::Memory;
-
 
 for my $count(1, 100) {
     print "Memory usage for $count ",

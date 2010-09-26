@@ -1,5 +1,4 @@
 #!perl -w
-
 use strict;
 use Benchmark::Memory;
 
@@ -50,7 +49,7 @@ my $vars = {
 };
 
 for my $tmpl qw(tiny large) {
-    for my $count(1, 2) {
+    for my $count(qw(first second)) {
         print "Memory Usage for '$tmpl' ($count):\n";
         cmpthese 1 => {
             Xslate => sprintf(q{
